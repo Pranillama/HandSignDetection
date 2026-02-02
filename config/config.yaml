@@ -1,0 +1,44 @@
+# Paths configuration
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  landmarks_data: "data/landmarks"
+  models_landmarks: "models/landmarks"
+  models_cnn: "models/cnn"
+  logs: "logs"
+  results: "results"
+
+# Data collection parameters
+collection:
+  image_width: 640
+  image_height: 480
+  capture_interval: 0.1
+  signs: ["A", "B", "C"]
+
+# Preprocessing settings
+preprocessing:
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  min_detection_confidence: 0.5
+
+# Landmark model training hyperparameters
+training_landmarks:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  hidden_layers: [128, 64, 32]
+  dropout_rate: 0.3
+
+# CNN model training hyperparameters
+training_cnn:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  image_size: [224, 224]
+  architecture: "simple_cnn"
+
+# Inference settings
+inference:
+  confidence_threshold: 0.7
+  display_fps: true
