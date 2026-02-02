@@ -1,1 +1,28 @@
 venv/
+
+# Data directories (generated during collection/preprocessing)
+data/
+
+# Trained models (generated during training)
+models/
+
+# Execution logs and comparison results
+logs/
+results/
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# macOS system files
+.DS_Store
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
