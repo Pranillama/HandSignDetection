@@ -20,8 +20,8 @@ preprocessing:
   train_split: 0.70
   val_split: 0.15
   test_split: 0.15
-  min_detection_confidence: 0.5
-
+  min_detection_confidence: 0.5 # (model requires at lest 50% confidence)minimum confidence score required to consider a detection successful. 
+  
 # Landmark model training hyperparameters
 training_landmarks:
   epochs: 50
