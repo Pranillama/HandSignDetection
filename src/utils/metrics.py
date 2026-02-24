@@ -13,16 +13,11 @@ def calculate_accuracy(
     y_pred: Union[np.ndarray, list],
 ) -> float:
     """Compute overall accuracy between true and predicted labels.
-
     Args:
         y_true: Array-like of integer ground-truth class labels.
         y_pred: Array-like of integer predicted class labels.
-
     Returns:
-        Float accuracy (fraction correct).
-
-    Raises:
-        ValueError: if `y_true` and `y_pred` have different lengths.
+        Float accuracy.
     """
     arr_true = np.asarray(y_true)
     arr_pred = np.asarray(y_pred)
