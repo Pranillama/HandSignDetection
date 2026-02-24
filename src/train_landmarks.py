@@ -195,9 +195,9 @@ def main():
     test_accuracy = calculate_accuracy(all_labels, all_preds)
     metrics_dict = calculate_metrics(all_labels, all_preds, class_names)
 
-    #saving the each trained model with the date it was trained
+    # saving the each trained model with the date it was trained
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_path = models_dir / f"model_{ts}.pth"
+    model_path = models_dir / f"model_{ts}.pth" # selecting different models
     torch.save(model.state_dict(), model_path) # only saving weights 
 
     # This is just saving the important info and context
@@ -226,7 +226,9 @@ def main():
     with metrics_path.open("w", encoding="utf-8") as f:
         json.dump(metrics_payload, f, indent=2)
 
-    # symlink update (get the freshest version from saved models for the real time inference)
+    """
+    6. symlink update (get the freshest version from saved models for the real time inference)
+    """
     symlink_path = models_dir / "model_latest.pth"
     if symlink_path.exists() or symlink_path.is_symlink():
         symlink_path.unlink()
