@@ -104,6 +104,11 @@ def main():
     train_acc_history: list[float] = []
     val_acc_history: list[float] = []
 
+    # Early stopping setup 
+    patience = 5  # stop if val_acc doesn't improve for 5 epochs
+    best_val_acc = -1.0
+    patience_counter = 0
+
     train_start = time.time()
     for epoch in range(1, epochs + 1):
         # training phase
@@ -149,6 +154,18 @@ def main():
         logger.info(
             f"Epoch {epoch}/{epochs} — train_acc: {train_acc:.4f}, val_acc: {val_acc:.4f}"
         )
+
+        # Early stopping check 
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                logger.info(
+                    f"Early stopping triggered at epoch {epoch} (no improvement for {patience} epochs)"
+                )
+                break
     training_time = time.time() - train_start # just loging start and end time
 
     """
