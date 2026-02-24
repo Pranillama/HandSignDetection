@@ -158,20 +158,21 @@ def main():
     all_preds: list[int] = []
     all_labels: list[int] = []
     test_loss = 0.0
-    count = 0
+    total_samples = 0
     with torch.no_grad():
         for xb, yb in datasets["test"]:
             xb = xb.to(device)
             yb = yb.to(device)
             logits = model(xb)
             loss = criterion(logits, yb)
-            test_loss += loss.item()
-            count += 1
+            batch_size = xb.size(0)
+            test_loss += loss.item() * batch_size
+            total_samples += batch_size
             preds = torch.argmax(logits, dim=1)
             #need cpu for accuracy (for eg for confusion matrix)
             all_preds.extend(preds.cpu().tolist()) #. extend: wraps all batched into single one long list
             all_labels.extend(yb.cpu().tolist())
-    test_loss = test_loss / count if count > 0 else 0.0 # average loss per batch 
+    test_loss = test_loss / total_samples if total_samples > 0 else 0.0 # average loss per sample
 
     # calculating accuracy and other metrics
     test_accuracy = calculate_accuracy(all_labels, all_preds)
