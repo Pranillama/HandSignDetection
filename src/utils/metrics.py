@@ -13,11 +13,6 @@ def calculate_accuracy(
     y_pred: Union[np.ndarray, list],
 ) -> float:
     """Compute overall accuracy between true and predicted labels.
-    Args:
-        y_true: Array-like of integer ground-truth class labels.
-        y_pred: Array-like of integer predicted class labels.
-    Returns:
-        Float accuracy.
     """
     arr_true = np.asarray(y_true)
     arr_pred = np.asarray(y_pred)
@@ -32,20 +27,7 @@ def confusion_matrix(
     num_classes: int,
 ) -> np.ndarray:
     """Build a confusion matrix.
-
     Rows correspond to true labels and columns to predicted labels.
-
-    Args:
-        y_true: Array-like of integer ground-truth class labels.
-        y_pred: Array-like of integer predicted class labels.
-        num_classes: Total number of classes.
-
-    Returns:
-        An integer NumPy array of shape (num_classes, num_classes).
-
-    Raises:
-        ValueError: if labels are outside the [0, num_classes) range or
-            if inputs have mismatched lengths.
     """
     arr_true = np.asarray(y_true)
     arr_pred = np.asarray(y_pred)
@@ -67,13 +49,6 @@ def per_class_accuracy(
     class_names: List[str],
 ) -> Dict[str, Optional[float]]:
     """Compute accuracy for each class.
-
-    Args:
-        y_true: Array-like of integer ground-truth class labels.
-        y_pred: Array-like of integer predicted class labels.
-        class_names: List of class names in order of label index.
-
-    Returns:
         Dictionary mapping each class name to its accuracy. If a class
         has no samples, its value is `None` and a warning is emitted.
     """
@@ -101,18 +76,6 @@ def calculate_metrics(
     class_names: List[str],
 ) -> Dict[str, Union[float, list, Dict[str, Optional[float]]]]:
     """Aggregate multiple evaluation metrics into a single dictionary.
-
-    This helper constructs the structure expected by the project's
-    `metrics.json` schema.
-
-    Args:
-        y_true: Array-like of ground-truth labels.
-        y_pred: Array-like of predicted labels.
-        class_names: Names of classes in label order.
-
-    Returns:
-        A dictionary with keys ``accuracy``, ``confusion_matrix`` (as a
-        nested list), and ``per_class_accuracy``.
     """
     acc = calculate_accuracy(y_true, y_pred)
     cm = confusion_matrix(y_true, y_pred, len(class_names)).tolist()

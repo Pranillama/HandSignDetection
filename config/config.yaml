@@ -29,7 +29,7 @@ training_landmarks:
   learning_rate: 0.001
   hidden_layers: [64, 32] # we start with wide to capture as much as detail and narrow down 
   #128
-  dropout_rate: 0.3 # to prevent overfitting.
+  dropout_rate: 0.5 # to prevent overfitting.
   # ignore 30% of the neurons in your hidden layers during every forward pass of training.
 
 # CNN model training hyperparameters
@@ -37,8 +37,8 @@ training_cnn:
   epochs: 50
   batch_size: 32
   learning_rate: 0.001
-  image_size: [224, 224]
-  architecture: "simple_cnn"
+  image_size: [64, 64]
+  architecture: "lightweight_cnn"
 
 # Inference settings
 inference:

@@ -1,6 +1,4 @@
-"""Placeholder: Real-time inference using CNN model.
-
-This stub will later implement webcam inference using a CNN model.
+"""Real-time inference using CNN model.
 """
 
 from src.utils.logger import setup_logger

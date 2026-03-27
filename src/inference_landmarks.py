@@ -92,7 +92,8 @@ def main():
             total_predictions += 1
         else:
             label, conf_val = "", 0.0
-
+            
+        # just display 
         display_prediction(frame, label, conf_val, threshold)
 
         fps = 1.0 / (time.time() - frame_start + 1e-9)

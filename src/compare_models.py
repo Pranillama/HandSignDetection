@@ -1,4 +1,4 @@
-"""Placeholder: Compare landmarks and CNN models.
+""" Compare landmarks and CNN models.
 
 This stub will later implement systematic model comparison and reporting.
 """

@@ -40,7 +40,6 @@ class HandDetector:
     
     The detector expects BGR images (OpenCV convention). MediaPipe requires
     RGB input, so conversion is handled internally.
-    
     Args:
         min_detection_confidence: Minimum confidence for detection (0-1).
             Defaults to config value.
@@ -78,12 +77,6 @@ class HandDetector:
     
     def detect(self, image: np.ndarray) -> Optional[mp.solutions.hands.HandsResults]:
         """Run hand detection on a BGR image and return MediaPipe results.
-        
-        Args:
-            image: BGR image as numpy array with shape (H, W, 3) and dtype uint8.
-        
-        Returns:
-            MediaPipe HandsResults on success, or ``None`` on failure.
         """
         if not isinstance(image, np.ndarray):
             logger.warning("detect() expected numpy.ndarray, got %s", type(image))
@@ -124,9 +117,7 @@ class HandDetector:
 
 def landmarks_to_array(hand_landmarks: mp.framework.formats.landmark_pb2.NormalizedLandmarkList) -> np.ndarray:
     """Convert MediaPipe NormalizedLandmarkList to a (21, 3) numpy array.
-    
-    Returns:
-        Array of shape (21, 3) with dtype float32 containing [x, y, z].
+    Returns: Array of shape (21, 3) with dtype float32 containing [x, y, z].
     """
     coords = []
     for lm in hand_landmarks.landmark:
@@ -140,7 +131,7 @@ def landmarks_to_array(hand_landmarks: mp.framework.formats.landmark_pb2.Normali
 def extract_landmarks(image: np.ndarray, detector: Optional[HandDetector] = None) -> Optional[np.ndarray]:
     """Detect and extract the first hand's landmarks as a (21, 3) array.
     
-    If ``detector`` is not provided a temporary ``HandDetector`` is created
+    If (detector) is not provided a temporary (HandDetector) is created
     with config-based min_detection_confidence and closed after use.
     """
     if not isinstance(image, np.ndarray):
@@ -169,7 +160,6 @@ def extract_landmarks(image: np.ndarray, detector: Optional[HandDetector] = None
 
 def normalize_landmarks(landmarks: np.ndarray) -> np.ndarray:
     """Normalize landmark array and return flattened vector of length 63.
-    
     - Accepts shape (21, 3) or (63,) and returns flattened (63,) array.
     - Clips x and y to [0, 1] (MediaPipe uses normalized coordinates).
     - Normalizes z via min-max scaling per hand to [0, 1].
