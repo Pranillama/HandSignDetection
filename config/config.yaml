@@ -37,6 +37,7 @@ training_cnn:
   epochs: 50
   batch_size: 32
   learning_rate: 0.001
+  dropout_rate: 0.5
   image_size: [64, 64]
   architecture: "lightweight_cnn"
 

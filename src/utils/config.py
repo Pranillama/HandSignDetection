@@ -142,13 +142,13 @@ def validate_config(config: Dict[str, Any]) -> None:
 
     # Training CNN
     t_cnn = config["training_cnn"]
-    tcnn_req = ["epochs", "batch_size", "learning_rate", "image_size", "architecture"]
+    tcnn_req = ["epochs", "batch_size", "learning_rate", "image_size", "architecture", "dropout_rate"]
     for key in tcnn_req:
         if key not in t_cnn:
             raise ValueError(f"Missing required configuration key: training_cnn.{key}")
 
     if not isinstance(t_cnn["image_size"], list) or len(t_cnn["image_size"]) != 2:
-        raise ValueError("Invalid value for training_cnn.image_size: expected list [width, height]")
+        raise ValueError("Invalid value for training_cnn.image_size: expected list [height, width]")
     if not all(isinstance(x, int) and x > 0 for x in t_cnn["image_size"]):
         raise ValueError("Invalid value for training_cnn.image_size: expected positive integers")
 
@@ -160,6 +160,8 @@ def validate_config(config: Dict[str, Any]) -> None:
         raise ValueError("Invalid value for training_cnn.learning_rate: expected positive number")
     if not isinstance(t_cnn["architecture"], str) or not t_cnn["architecture"].strip():
         raise ValueError("Invalid value for training_cnn.architecture: expected non-empty string")
+    if not isinstance(t_cnn["dropout_rate"], (int, float)) or not (0 <= t_cnn["dropout_rate"] <= 1):
+        raise ValueError("Invalid value for training_cnn.dropout_rate: expected between 0 and 1")
 
     # Inference
     inf = config["inference"]
