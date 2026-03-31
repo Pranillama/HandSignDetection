@@ -106,7 +106,7 @@ def validate_config(config: Dict[str, Any]) -> None:
 
     # Preprocessing splits and params
     pre = config["preprocessing"]
-    pre_req = ["train_split", "val_split", "test_split", "min_detection_confidence"]
+    pre_req = ["train_split", "val_split", "test_split", "min_detection_confidence", "bbox_padding"]
     for key in pre_req:
         if key not in pre:
             raise ValueError(f"Missing required configuration key: preprocessing.{key}")
@@ -121,6 +121,11 @@ def validate_config(config: Dict[str, Any]) -> None:
 
     if not (0 <= pre["min_detection_confidence"] <= 1):
         raise ValueError("Invalid preprocessing.min_detection_confidence: expected value between 0 and 1")
+
+    if not isinstance(pre["bbox_padding"], (int, float)) or not (0 <= pre["bbox_padding"] <= 1):
+        raise ValueError(
+            f"Invalid value for preprocessing.bbox_padding: expected numeric ratio between 0 and 1, got {repr(pre['bbox_padding'])}"
+        )
 
     # Training landmarks
     t_land = config["training_landmarks"]

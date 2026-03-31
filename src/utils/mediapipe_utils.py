@@ -26,13 +26,22 @@ FLATTENED_SIZE = NUM_HAND_LANDMARKS * LANDMARK_FEATURES
 
 logger = logging.getLogger(__name__)
 
-# Load default min_detection_confidence from config
+# Load default preprocessing values from config
+_DEFAULT_MIN_DETECTION_CONFIDENCE = 0.5
+_DEFAULT_BBOX_PADDING = 0.25
+
 try:
     _config = load_config()
-    _DEFAULT_MIN_DETECTION_CONFIDENCE = float(_config["preprocessing"]["min_detection_confidence"])
+    try:
+        _DEFAULT_MIN_DETECTION_CONFIDENCE = float(_config["preprocessing"]["min_detection_confidence"])
+    except Exception as exc:
+        logger.warning("Failed to load config for default min_detection_confidence: %s. Using 0.5.", exc)
+    try:
+        _DEFAULT_BBOX_PADDING = float(_config["preprocessing"]["bbox_padding"])
+    except Exception as exc:
+        logger.warning("Failed to load config for default bbox_padding: %s. Using 0.25.", exc)
 except Exception as exc:
-    logger.warning("Failed to load config for default min_detection_confidence: %s. Using 0.5.", exc)
-    _DEFAULT_MIN_DETECTION_CONFIDENCE = 0.5
+    logger.warning("Failed to load config: %s.", exc)
 
 
 class HandDetector:
@@ -126,6 +135,40 @@ def landmarks_to_array(hand_landmarks: mp.framework.formats.landmark_pb2.Normali
     if arr.shape != (NUM_HAND_LANDMARKS, LANDMARK_FEATURES):
         logger.warning("landmarks_to_array produced unexpected shape %s", arr.shape)
     return arr
+
+"""Crop a hand region from a BGR image using MediaPipe landmark bounding box.
+"""
+def crop_hand_bbox(
+    image: np.ndarray,
+    hand_landmarks: mp.framework.formats.landmark_pb2.NormalizedLandmarkList,
+    padding_ratio: float = _DEFAULT_BBOX_PADDING,
+) -> np.ndarray:
+    
+    if not isinstance(image, np.ndarray) or image.ndim != 3 or image.shape[2] != 3:
+        logger.warning("crop_hand_bbox expected a BGR np.ndarray with shape (H, W, 3), got %s", getattr(image, "shape", type(image)))
+        raise ValueError("image must be a 3-channel BGR np.ndarray")
+
+    h, w = image.shape[:2]
+
+    xs = [lm.x * w for lm in hand_landmarks.landmark[:NUM_HAND_LANDMARKS]]
+    ys = [lm.y * h for lm in hand_landmarks.landmark[:NUM_HAND_LANDMARKS]]
+
+    x_min, x_max = min(xs), max(xs)
+    y_min, y_max = min(ys), max(ys)
+
+    pad_x = padding_ratio * (x_max - x_min)
+    pad_y = padding_ratio * (y_max - y_min)
+
+    x1 = max(0, int(x_min - pad_x))
+    y1 = max(0, int(y_min - pad_y))
+    x2 = min(w, int(x_max + pad_x))
+    y2 = min(h, int(y_max + pad_y))
+
+    if x2 <= x1 or y2 <= y1:
+        logger.warning("crop_hand_bbox produced a degenerate crop (%d,%d,%d,%d); returning full image", x1, y1, x2, y2)
+        return image
+
+    return image[y1:y2, x1:x2]
 
 
 def extract_landmarks(image: np.ndarray, detector: Optional[HandDetector] = None) -> Optional[np.ndarray]:

@@ -22,6 +22,7 @@ from src.utils.config import load_config, create_directories
 from src.utils.logger import setup_logger
 from src.utils.mediapipe_utils import (
     HandDetector,
+    crop_hand_bbox,
     extract_landmarks,
     is_hand_detected,
     normalize_landmarks,
@@ -43,52 +44,66 @@ def validate_images_with_hand_detection(
     labels: List[str],
     file_paths: List[str],
     min_detection_confidence: float = 0.5,
-) -> Tuple[List[np.ndarray], List[str], List[str]]:
+    bbox_padding: float = 0.25,
+) -> Tuple[List[np.ndarray], List[np.ndarray], List[str], List[str]]:
     """Validate images by detecting hands using MediaPipe.
-    
+
     Filters out images where no hand is detected. Uses a single HandDetector with
     the provided confidence threshold to validate each image, avoiding per-image
     re-initialization overhead.
-    
+
     Returns:
-        Tuple of (valid_images, valid_labels, valid_paths) filtered to include
-        only images with detected hands.
+        Tuple of (valid_original_images, valid_cropped_images, valid_labels, valid_paths)
+        filtered to include only images with detected hands. Original images are the
+        unmodified full-frame arrays; cropped images are hand-region crops.
     """
     if not images:
         logger.warning("No images to validate")
-        return [], [], []
+        return [], [], [], []
 
     if len(images) != len(labels) or len(labels) != len(file_paths):
         logger.error("Images, labels, and file_paths length mismatch")
-        return [], [], []
+        return [], [], [], []
 
     logger.info(f"Validating {len(images)} images for hand detection")
 
-    valid_images: List[np.ndarray] = []
+    valid_original_images: List[np.ndarray] = []
+    valid_cropped_images: List[np.ndarray] = []
     valid_labels: List[str] = []
     valid_paths: List[str] = []
     rejected_count = 0
+    crop_counts: Dict[str, int] = {}
+    skip_counts: Dict[str, int] = {}
 
     with HandDetector(min_detection_confidence=min_detection_confidence) as detector:
         for idx, (image, label, path) in enumerate(zip(images, labels, file_paths)):
             results = detector.detect(image)
             if results and getattr(results, "multi_hand_landmarks", None):
-                valid_images.append(image)
+                cropped = crop_hand_bbox(image, results.multi_hand_landmarks[0], padding_ratio=bbox_padding)
+                valid_original_images.append(image)
+                valid_cropped_images.append(cropped)
                 valid_labels.append(label)
                 valid_paths.append(path)
+                crop_counts[label] = crop_counts.get(label, 0) + 1
             else:
                 rejected_count += 1
+                skip_counts[label] = skip_counts.get(label, 0) + 1
                 logger.debug(f"No hand detected in image: {path}")
 
     rejection_rate = (rejected_count / len(images)) * 100 if images else 0.0
 
     logger.info(
         f"Hand detection validation complete: "
-        f"total={len(images)}, valid={len(valid_images)}, "
+        f"total={len(images)}, valid={len(valid_original_images)}, "
         f"rejected={rejected_count}, rejection_rate={rejection_rate:.1f}%"
     )
+    for sign in sorted(set(labels)):
+        logger.info(
+            f"  {sign}: cropped={crop_counts.get(sign, 0)}, "
+            f"skipped={skip_counts.get(sign, 0)}"
+        )
 
-    return valid_images, valid_labels, valid_paths
+    return valid_original_images, valid_cropped_images, valid_labels, valid_paths
 
 
 def extract_and_save_landmarks(
@@ -197,12 +212,14 @@ def main() -> int:
         processed_data_path = config["paths"]["processed_data"]
         landmarks_data_path = config["paths"]["landmarks_data"]
         min_detection_confidence = float(config["preprocessing"]["min_detection_confidence"])
+        bbox_padding = float(config["preprocessing"]["bbox_padding"])
 
         logger.info("Configuration loaded successfully")
         logger.info(f"  Raw data path: {raw_data_path}")
         logger.info(f"  Processed data path: {processed_data_path}")
         logger.info(f"  Landmarks data path: {landmarks_data_path}")
         logger.info(f"  Min detection confidence: {min_detection_confidence}")
+        logger.info(f"  Bbox padding: {bbox_padding}")
 
     except Exception as exc:
         logger.error(f"Failed to load configuration: {exc}")
@@ -235,15 +252,17 @@ def main() -> int:
     logger.info("-" * 70)
 
     try:
-        valid_images, valid_labels, valid_paths = validate_images_with_hand_detection(
-            images, labels, file_paths, min_detection_confidence=min_detection_confidence
+        valid_original_images, valid_cropped_images, valid_labels, valid_paths = validate_images_with_hand_detection(
+            images, labels, file_paths,
+            min_detection_confidence=min_detection_confidence,
+            bbox_padding=bbox_padding,
         )
 
-        if not valid_images:
+        if not valid_original_images:
             logger.error("No valid images after hand detection validation")
             return 1
 
-        logger.info(f"Validation passed: {len(valid_images)} valid images")
+        logger.info(f"Validation passed: {len(valid_original_images)} valid images")
 
     except Exception as exc:
         logger.error(f"Hand detection validation failed: {exc}")
@@ -256,8 +275,19 @@ def main() -> int:
 
     try:
         train_ratio, val_ratio, test_ratio = get_split_ratios_from_config()
-        splits = stratified_split(
-            valid_images,
+        # Split cropped images for disk export
+        cropped_splits = stratified_split(
+            valid_cropped_images,
+            valid_labels,
+            valid_paths,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio,
+        )
+
+        # Split original images using identical parameters so indices stay aligned
+        original_splits = stratified_split(
+            valid_original_images,
             valid_labels,
             valid_paths,
             train_ratio=train_ratio,
@@ -266,7 +296,7 @@ def main() -> int:
         )
 
         for split_name in ["train", "val", "test"]:
-            split_images, split_labels, _ = splits[split_name]
+            split_images, split_labels, _ = cropped_splits[split_name]
             if split_images:
                 logger.info(f"{split_name.upper()} split: {len(split_images)} images")
             else:
@@ -284,7 +314,7 @@ def main() -> int:
     try:
         total_saved = 0
         for split_name in ["train", "val", "test"]:
-            split_images, split_labels, split_paths = splits[split_name]
+            split_images, split_labels, split_paths = cropped_splits[split_name]
             saved_count = save_images_to_split(
                 split_images, split_labels, split_paths, processed_data_path, split_name
             )
@@ -325,7 +355,7 @@ def main() -> int:
 
         with HandDetector(min_detection_confidence=min_detection_confidence) as detector:
             for split_name in ["train", "val", "test"]:
-                split_images, split_labels, _ = splits[split_name]
+                split_images, split_labels, _ = original_splits[split_name]
 
                 if not split_images:
                     logger.info(f"Skipping landmark extraction for empty {split_name} split")
@@ -354,12 +384,12 @@ def main() -> int:
     try:
         logger.info("Pipeline Statistics:")
         logger.info(f"  Raw images scanned: {len(images)}")
-        logger.info(f"  Valid images after hand detection: {len(valid_images)}")
+        logger.info(f"  Valid images after hand detection: {len(valid_original_images)}")
         logger.info(
             f"  Images per split: "
-            f"train={len(splits['train'][0])}, "
-            f"val={len(splits['val'][0])}, "
-            f"test={len(splits['test'][0])}"
+            f"train={len(cropped_splits['train'][0])}, "
+            f"val={len(cropped_splits['val'][0])}, "
+            f"test={len(cropped_splits['test'][0])}"
         )
         logger.info(f"  Landmarks extracted: {total_landmarks}")
 
@@ -374,7 +404,7 @@ def main() -> int:
             size_mb = file_path.stat().st_size / (1024 * 1024)
             logger.info(f"    {f}: {size_mb:.2f} MB")
 
-        overall_success_rate = (len(valid_images) / len(images)) * 100 if images else 0.0
+        overall_success_rate = (len(valid_original_images) / len(images)) * 100 if images else 0.0
         logger.info(f"  Overall success rate: {overall_success_rate:.1f}%")
 
         logger.info("=" * 70)

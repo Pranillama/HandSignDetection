@@ -20,7 +20,8 @@ preprocessing:
   train_split: 0.70
   val_split: 0.15
   test_split: 0.15
-  min_detection_confidence: 0.5 # (model requires at lest 50% confidence)minimum confidence score required to consider a detection successful. 
+  min_detection_confidence: 0.5 # (model requires at lest 50% confidence)minimum confidence score required to consider a detection successful.
+  bbox_padding: 0.25 # crop box padding 
   
 # Landmark model training hyperparameters
 training_landmarks:

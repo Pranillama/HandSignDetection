@@ -21,7 +21,6 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-import shutil
 
 from src.utils.config import load_config
 
@@ -292,8 +291,10 @@ def save_images_to_split(
             filename = Path(src_path).name
             dest_path = sign_dir / filename
             
-            # Copy file preserving metadata
-            shutil.copy2(src_path, str(dest_path))
+            # Write in-memory cropped array to disk
+            success = cv2.imwrite(str(dest_path), image)
+            if not success:
+                raise IOError(f"cv2.imwrite failed for {dest_path}")
             saved_count += 1
         
         except Exception as exc:
