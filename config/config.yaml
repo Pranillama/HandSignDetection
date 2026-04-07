@@ -13,7 +13,7 @@ collection:
   image_width: 640
   image_height: 480
   capture_interval: 0.1
-  signs: ["A", "B", "C"]
+  signs: ["rock", "paper", "scissors"]
 
 # Preprocessing settings
 preprocessing:
