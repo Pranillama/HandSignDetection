@@ -167,15 +167,6 @@ def stratified_split(
     distribution as the original dataset. Scikit-learn is not available, so
     this is implemented manually using numpy.
     
-    Args:
-        images: List of image arrays (BGR format).
-        labels: List of class labels for each image.
-        file_paths: List of file paths for each image.
-        train_ratio: Fraction of data for training (default 0.7).
-        val_ratio: Fraction of data for validation (default 0.15).
-        test_ratio: Fraction of data for testing (default 0.15).
-        random_seed: Random seed for reproducibility (default 42).
-    
     Returns:
         Dictionary with keys "train", "val", "test", each containing a tuple of
         (images, labels, file_paths) for that split.
