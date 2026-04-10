@@ -90,9 +90,17 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
 
-    # build transform
+    """ build transforms augmentation only for train"""
     h, w = image_size
-    transform = transforms.Compose([
+    train_transform = transforms.Compose([
+        transforms.Resize((h, w)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+    ])
+    eval_transform = transforms.Compose([
         transforms.Resize((h, w)),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
@@ -103,6 +111,7 @@ def main():
     """
     datasets = {}
     for split in ["train", "val", "test"]:
+        transform = train_transform if split == "train" else eval_transform
         ds = ASLImageDataset(processed_data_dir / split, class_names, transform)
         loader = DataLoader(ds, batch_size=batch_size, shuffle=(split == "train"))
         datasets[split] = loader
@@ -123,9 +132,10 @@ def main():
     train_acc_history: list[float] = []
     val_acc_history: list[float] = []
     
-    # Early stopping setup 
+    # Early stopping setup
     patience = 5 # stop if val_acc doesn't improve for 5 epochs
     best_val_acc = -1.0
+    best_state_dict: dict = {}
     patience_counter = 0
 
     train_start = time.time()
@@ -172,9 +182,10 @@ def main():
             f"Epoch {epoch}/{epochs} — train_acc: {train_acc:.4f}, val_acc: {val_acc:.4f}"
         )
 
-        # early stopping
+        # early stopping — save best checkpoint in memory
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            best_state_dict = {k: v.clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
@@ -184,6 +195,11 @@ def main():
                 )
                 break
     training_time = time.time() - train_start
+
+    # Restore best checkpoint before evaluation
+    if best_state_dict:
+        model.load_state_dict(best_state_dict)
+        logger.info(f"Restored best model (val_acc={best_val_acc:.4f})")
 
     """
     5. test evaluation

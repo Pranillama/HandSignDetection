@@ -2,7 +2,7 @@
 from pathlib import Path
 import shutil
 
-val_dir = Path("data/processed/val")
+val_dir = Path("data/processed/test")
 classes = ["rock", "paper", "scissors"]
 
 for cls in classes:
